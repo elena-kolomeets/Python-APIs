@@ -1,0 +1,122 @@
+swagger: "2.0"
+info:
+  description: This is the swagger file that goes with the server code
+  version: "1.0.0"
+  title: Swagger REST Article
+consumes:
+  - "application/json"
+produces:  
+  - "application/json"
+
+basePath: "/api"
+
+# Paths supported by the server app
+paths:
+  /people:
+    get:
+      operationId: people.read_all
+      tags:
+        - People
+      summary: Read the entire list of people
+      description: Read the list of people
+      responses:
+        200:
+          description: Successfully read the list of people
+          schema:
+            type: array
+            items:
+              properties:
+                fname:
+                  type: string
+                lname:
+                  type: string
+                timestamp:
+                  type: string
+
+    post:
+      operationId: people.add_one
+      tags: 
+        - People
+      summary: Add person's data to the people list
+      description: Add a person's data to the people list
+      parameters:
+        - name: person
+          in: body
+          description: A person to add
+          required: true
+          schema:
+            type: object
+            properties:
+              fname:
+                type: string
+              lname:
+                type: string
+      responses:
+        201:
+          description: Successfully add a person to the people list
+
+  /people/{lname}:
+    get:
+      operationId: people.read_one
+      tags:
+        - People
+      summary: Read one person's data from the people list
+      description: Read one person's data from the people list
+      parameters:
+        - name: lname
+          in: path
+          description: Last name of the person to look up in the list
+          type: string
+          required: true
+      responses:
+        200:
+          description: Successfully read one person's data from the people list
+          schema:
+            properties:
+              fname:
+                type: string
+              lname:
+                type: string
+              timestamp:
+                type: string
+    
+    put:
+      operationId: people.update_one
+      tags:
+        - People
+      summary: Update person's data in the list
+      description: Update person's data in the list
+      parameters:
+        - name: lname
+          in: path
+          description: Last name of the person whose data is to be updated in the list
+          type: string
+          required: true
+        - name: person
+          in: body
+          schema:
+            type: object
+            properties:
+              fname:
+                type: string
+              lname:
+                type: string
+      responses:
+        200:
+          description: Successfully updated person's data in the people list
+    
+    delete:
+      operationId: people.delete_one
+      tags:
+        - People
+      summary: Delete person's data from the people list
+      description: Delete person's data from the people list
+      parameters:
+        - name: lname
+          in: path
+          description: Last name of the person whose data to be deleted in the list
+          type: string
+          required: true
+      responses:
+        200:
+          description: Successfully deleted person's info from the people list

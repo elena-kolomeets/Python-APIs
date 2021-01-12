@@ -1,7 +1,11 @@
+"""
+This API was built using the Real Python tutorial: 
+https://realpython.com/flask-connexion-rest-api/
+"""
 import connexion
-from flask import Flask, render_template
+from flask import render_template
 
-# crate an app instance (based on Flask)
+# create an app instance (based on Flask)
 app = connexion.App(__name__, specification_dir='./')
 # configure API endpoints
 app.add_api('swagger.yml')

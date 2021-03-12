@@ -1,7 +1,7 @@
-# Flask-APIs
-This is a collection of REST APIs built with Python and Flask with the help of different tutorials
+# Python-APIs
+This is a collection of REST APIs built with Python
 
+**Flask**
+* People REST API is built with Flask and Connexion with OpenAPI specification, based on "design-first" approach
 
-* People REST API is built with Flask and Connexion
-
-* Meals REST API is built with Flask-RESTful, Flask-MongoEngine, Flask-Bcrypt, Flask-JWT-Extended
+* Meals REST API is built with Flask-RESTful using MongoDB and JWT

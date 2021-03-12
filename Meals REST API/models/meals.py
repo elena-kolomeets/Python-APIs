@@ -5,7 +5,7 @@ class Meals(Document):
     """
      Template for a mongoengine document, which represents a user's favorite meal.
     """
-    name = StringField(required=True)
+    name = StringField(required=True, unique=True)
     description = StringField()
     price = FloatField()
     image_url = StringField()

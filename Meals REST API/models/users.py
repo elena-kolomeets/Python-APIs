@@ -1,5 +1,5 @@
 from mongoengine import Document, EmbeddedDocument, EmbeddedDocumentField, ListField, StringField, EmailField, \
-    BooleanField, ReferenceField
+    BooleanField, ReferenceField, NULLIFY
 from flask_bcrypt import generate_password_hash, check_password_hash
 
 from models.meals import Meals
@@ -21,8 +21,8 @@ class Users(Document):
     email = EmailField(required=True, unique=True)
     password = StringField(required=True, min_length=6)
     access = EmbeddedDocumentField(Access, default=Access(user=True, admin=False))
-    fav_meals = ListField(ReferenceField(Meals))
-    name = StringField()
+    fav_meals = ListField(ReferenceField(Meals, reverse_delete_rule=NULLIFY))
+    name = StringField(default='')
 
     def generate_pwd_hash(self):
         # hash the password with BCrypt method

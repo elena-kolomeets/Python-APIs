@@ -4,7 +4,7 @@ from flask_restful import Resource
 from mongoengine import DoesNotExist, FieldDoesNotExist, NotUniqueError, ValidationError
 
 from api.errors import forbidden, wrong_value
-from models.users import Users
+from models.users import Users, Meals
 
 
 class UsersApi(Resource):
@@ -19,6 +19,32 @@ class UsersApi(Resource):
         is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
         if is_admin:
             output = Users.objects.exclude('password')
+            return jsonify({'result': output})
+        else:
+            return forbidden()
+
+    @jwt_required()
+    def post(self) -> Response:
+        """
+        POST request method for creating a new user document.
+        JSON Web Token is required.
+        Admin-level access is required.
+        """
+        is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
+        if is_admin:
+            data = request.get_json()
+            try:  # validate the passed field values
+                Users(**data).validate()
+            except (FieldDoesNotExist, TypeError, ValidationError):
+                return wrong_value()
+            try:
+                new_user = Users(**data)
+                new_user.save()
+                output = {'new_user_id': str(new_user.id)}
+            except NotUniqueError:
+                output = 'User with this email already exists'
+            except AttributeError:
+                output = 'Could not get new user\'s ID.'
             return jsonify({'result': output})
         else:
             return forbidden()
@@ -62,13 +88,52 @@ class UserApi(Resource):
             return forbidden()
 
     @jwt_required()
-    def post(self) -> Response:
-        pass
+    def put(self, user_id: str) -> Response:
+        is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
+        # check if requested user is the same as logged in user
+        is_logged_in_user = get_jwt_identity() == user_id
+        if is_admin or is_logged_in_user:
+            data = request.get_json()
+            try:  # validate the passed field values
+                Users(**data).validate()
+            except (FieldDoesNotExist, TypeError, ValidationError, NotUniqueError):
+                return wrong_value()
+            try:
+                updated_user = Users.objects.get(id=user_id)
+                # preventing change of email or password
+                if data['email'] != updated_user.email or \
+                        not updated_user.check_pwd_hash(data['password']):
+                    output = 'Update rejected: change of email or password is not allowed.'
+                    return jsonify({'result': output})
+                fav_meals_list = []
+                if data['fav_meals']:  # retrieve referenced Meals documents
+                    fav_meals_list = [Meals.objects.get(__raw__=meal) for meal in data['fav_meals']]
+                # update fields except email and password;
+                # if new value for the field is not given, don't change it
+                updated_user.update(
+                    set__name=data.get('name', updated_user.name),
+                    set__access=data.get('access', updated_user.access),
+                    set__fav_meals=fav_meals_list if data['fav_meals'] else updated_user.fav_meals
+                )
+                output = f'Successfully updated user {user_id}'
+            except (DoesNotExist, ValidationError):
+                output = f'No user with id={user_id}'
+            return jsonify({'result': output})
+        else:
+            return forbidden()
 
     @jwt_required()
-    def put(self) -> Response:
-        pass
-
-    @jwt_required()
-    def delete(self) -> Response:
-        pass
+    def delete(self, user_id: str) -> Response:
+        is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
+        # check if requested user is the same as logged in user
+        is_logged_in_user = get_jwt_identity() == user_id
+        if is_admin or is_logged_in_user:
+            try:
+                Users.objects.get(id=user_id).delete()
+                output = f'Successfully deleted user {user_id}'
+                return jsonify({'result': output})
+            except (DoesNotExist, ValidationError):
+                output = f'No user with id={user_id}'
+                return jsonify({'result': output})
+        else:
+            return forbidden()

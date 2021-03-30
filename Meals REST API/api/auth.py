@@ -6,7 +6,7 @@ from flask_restful import Resource
 from mongoengine import DoesNotExist, NotUniqueError, ValidationError, FieldDoesNotExist
 
 from models.users import Users
-from api.errors import unauthorized, wrong_value
+from api.errors import unauthorized, wrong_value, not_admin
 
 
 class SignUpApi(Resource):
@@ -19,8 +19,15 @@ class SignUpApi(Resource):
             Users(**data).validate()
         except (FieldDoesNotExist, TypeError, ValidationError):
             return wrong_value()
+        if data.get('access') is not None:
+            if data['access']['admin']:
+                return not_admin()
         try:
-            new_user = Users(**data)
+            new_user = Users(
+                email=data.get('email'),
+                password=data.get('password'),
+                name=data.get('name')
+            )
             new_user.save()
             output = {'new_user_id': str(new_user.id)}
         except NotUniqueError:

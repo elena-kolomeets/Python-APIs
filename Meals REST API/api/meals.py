@@ -46,20 +46,20 @@ class MealsApi(Resource):
         else:
             return forbidden()
 
-    @jwt_required()
-    def delete(self) -> Response:
-        """
-        DELETE request method for deleting all meal documents.
-        JSON Web Token is required.
-        Admin-level access is required.
-        """
-        is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
-        if is_admin:
-            Meals.objects.delete()
-            output = f'Successfully deleted all meals'
-            return jsonify({'result': output})
-        else:
-            return forbidden()
+    # @jwt_required()
+    # def delete(self) -> Response:
+    #     """
+    #     DELETE request method for deleting all meal documents.
+    #     JSON Web Token is required.
+    #     Admin-level access is required.
+    #     """
+    #     is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
+    #     if is_admin:
+    #         Meals.objects.delete()
+    #         output = f'Successfully deleted all meals'
+    #         return jsonify({'result': output})
+    #     else:
+    #         return forbidden()
 
 
 class MealApi(Resource):

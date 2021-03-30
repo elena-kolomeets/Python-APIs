@@ -20,3 +20,10 @@ def wrong_value() -> Response:
     resp = jsonify({'result': output})
     resp.status_code = 400
     return resp
+
+
+def not_admin() -> Response:
+    output = {'error': 'Operation rejected: only another admin user can give users admin access.'}
+    resp = jsonify({'result': output})
+    resp.status_code = 401
+    return resp

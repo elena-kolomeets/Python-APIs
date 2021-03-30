@@ -2,8 +2,9 @@ from flask import jsonify, Response, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from mongoengine import DoesNotExist, FieldDoesNotExist, NotUniqueError, ValidationError
+from pymongo.errors import OperationFailure
 
-from api.errors import forbidden, wrong_value
+from api.errors import forbidden, wrong_value, not_admin
 from models.users import Users, Meals
 
 
@@ -49,20 +50,20 @@ class UsersApi(Resource):
         else:
             return forbidden()
 
-    @jwt_required()
-    def delete(self) -> Response:
-        """
-        DELETE request method for deleting all user documents.
-        JSON Web Token is required.
-        Admin-level access is required.
-        """
-        is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
-        if is_admin:
-            Users.objects.delete()
-            output = f'Successfully deleted all users'
-            return jsonify({'result': output})
-        else:
-            return forbidden()
+    # @jwt_required()
+    # def delete(self) -> Response:
+    #     """
+    #     DELETE request method for deleting all user documents.
+    #     JSON Web Token is required.
+    #     Admin-level access is required.
+    #     """
+    #     is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
+    #     if is_admin:
+    #         Users.objects.delete()
+    #         output = f'Successfully deleted all users'
+    #         return jsonify({'result': output})
+    #     else:
+    #         return forbidden()
 
 
 class UserApi(Resource):
@@ -89,6 +90,11 @@ class UserApi(Resource):
 
     @jwt_required()
     def put(self, user_id: str) -> Response:
+        """
+        PUT request method for updating a certain user document.
+        JSON Web Token is required.
+        Admin-level access is required or logged in user should be the requested user.
+        """
         is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
         # check if requested user is the same as logged in user
         is_logged_in_user = get_jwt_identity() == user_id
@@ -104,17 +110,29 @@ class UserApi(Resource):
                 if data['email'] != updated_user.email or \
                         not updated_user.check_pwd_hash(data['password']):
                     output = 'Update rejected: change of email or password is not allowed.'
-                    return jsonify({'result': output})
-                fav_meals_list = []
-                if data['fav_meals']:  # retrieve referenced Meals documents
-                    fav_meals_list = [Meals.objects.get(__raw__=meal) for meal in data['fav_meals']]
-                # update fields except email and password;
+                    resp = jsonify({'result': output})
+                    resp.status_code = 400
+                    return resp
+                # retrieve referenced Meals documents and add
+                # their reference to fav_meals list (overwrites old list)
+                if data.get('fav_meals') is not None:
+                    try:
+                        fav_meals_list = [Meals.objects.get(__raw__=meal) for meal in data['fav_meals']]
+                        updated_user.update(
+                            set__fav_meals=fav_meals_list)
+                    except (OperationFailure, DoesNotExist, ValueError):
+                        return wrong_value()
                 # if new value for the field is not given, don't change it
                 updated_user.update(
-                    set__name=data.get('name', updated_user.name),
-                    set__access=data.get('access', updated_user.access),
-                    set__fav_meals=fav_meals_list if data['fav_meals'] else updated_user.fav_meals
-                )
+                    set__name=data.get('name', updated_user.name))
+                # grant admin access to the user (only existing admin can do it)
+                if data.get('access') is not None:
+                    if data['access']['admin']:
+                        if is_admin:
+                            updated_user.update(
+                                set__access=data.get('access', updated_user.access))
+                        else:
+                            return not_admin()
                 output = f'Successfully updated user {user_id}'
             except (DoesNotExist, ValidationError):
                 output = f'No user with id={user_id}'
@@ -124,6 +142,11 @@ class UserApi(Resource):
 
     @jwt_required()
     def delete(self, user_id: str) -> Response:
+        """
+        DELETE request method for deleting a certain user document.
+        JSON Web Token is required.
+        Admin-level access is required or logged in user should be the requested user.
+        """
         is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
         # check if requested user is the same as logged in user
         is_logged_in_user = get_jwt_identity() == user_id

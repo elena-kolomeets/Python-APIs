@@ -2,7 +2,7 @@ from flask import jsonify, Response, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from mongoengine import DoesNotExist, FieldDoesNotExist, NotUniqueError, ValidationError
-from pymongo.errors import OperationFailure
+from pymongo.errors import OperationFailure, DuplicateKeyError
 
 from api.errors import forbidden, wrong_value, not_admin
 from models.users import Users, Meals
@@ -39,9 +39,23 @@ class UsersApi(Resource):
             except (FieldDoesNotExist, TypeError, ValidationError):
                 return wrong_value()
             try:
-                new_user = Users(**data)
+                # retrieve referenced Meals documents and add
+                # their reference to fav_meals list
+                fav_meals_list = []
+                if data.get('fav_meals') is not None:
+                    fav_meals_list = [Meals.objects.get(__raw__=meal) for meal in data['fav_meals']]
+                # create a new user with the given data
+                new_user = Users(
+                    email=data.get('email'),
+                    password=data.get('password'),
+                    name=data.get('name'),
+                    fav_meals=fav_meals_list,
+                    access=data.get('access')
+                )
                 new_user.save()
                 output = {'new_user_id': str(new_user.id)}
+            except (OperationFailure, DoesNotExist, ValueError):
+                return wrong_value()
             except NotUniqueError:
                 output = 'User with this email already exists'
             except AttributeError:
@@ -49,21 +63,6 @@ class UsersApi(Resource):
             return jsonify({'result': output})
         else:
             return forbidden()
-
-    # @jwt_required()
-    # def delete(self) -> Response:
-    #     """
-    #     DELETE request method for deleting all user documents.
-    #     JSON Web Token is required.
-    #     Admin-level access is required.
-    #     """
-    #     is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
-    #     if is_admin:
-    #         Users.objects.delete()
-    #         output = f'Successfully deleted all users'
-    #         return jsonify({'result': output})
-    #     else:
-    #         return forbidden()
 
 
 class UserApi(Resource):
@@ -102,7 +101,7 @@ class UserApi(Resource):
             data = request.get_json()
             try:  # validate the passed field values
                 Users(**data).validate()
-            except (FieldDoesNotExist, TypeError, ValidationError, NotUniqueError):
+            except (FieldDoesNotExist, TypeError, ValidationError, NotUniqueError, DuplicateKeyError):
                 return wrong_value()
             try:
                 updated_user = Users.objects.get(id=user_id)

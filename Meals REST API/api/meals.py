@@ -2,6 +2,7 @@ from flask import jsonify, Response, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restful import Resource
 from mongoengine import DoesNotExist, FieldDoesNotExist, NotUniqueError, ValidationError
+from pymongo.errors import DuplicateKeyError
 
 from api.errors import forbidden, wrong_value
 from models.meals import Meals
@@ -46,21 +47,6 @@ class MealsApi(Resource):
         else:
             return forbidden()
 
-    # @jwt_required()
-    # def delete(self) -> Response:
-    #     """
-    #     DELETE request method for deleting all meal documents.
-    #     JSON Web Token is required.
-    #     Admin-level access is required.
-    #     """
-    #     is_admin = Users.objects.get(id=get_jwt_identity()).access.admin
-    #     if is_admin:
-    #         Meals.objects.delete()
-    #         output = f'Successfully deleted all meals'
-    #         return jsonify({'result': output})
-    #     else:
-    #         return forbidden()
-
 
 class MealApi(Resource):
     """Flask-resftul resource to manage individual meal documents"""
@@ -89,7 +75,7 @@ class MealApi(Resource):
             data = request.get_json()
             try:    # validate the passed field values
                 Meals(**data).validate()
-            except (FieldDoesNotExist, TypeError, ValidationError, NotUniqueError):
+            except (FieldDoesNotExist, TypeError, ValidationError, NotUniqueError, DuplicateKeyError):
                 return wrong_value()
             try:
                 updated_meal = Meals.objects.get(id=meal_id)
@@ -101,9 +87,12 @@ class MealApi(Resource):
                     set__image_url=data.get('image_url', updated_meal.image_url)
                 )
                 output = f'Successfully updated meal {meal_id}'
+                return jsonify({'result': output})
             except (DoesNotExist, ValidationError):
                 output = f'No meal with id={meal_id}'
-            return jsonify({'result': output})
+                return jsonify({'result': output})
+            except NotUniqueError:
+                return wrong_value()
         else:
             return forbidden()
 

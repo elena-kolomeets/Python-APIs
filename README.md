@@ -9,4 +9,4 @@ This is a collection of REST APIs built with Python for learning and practicing 
 
 
 * Meals REST API is built with Flask-RESTful using MongoDB and JWT
-    - check out the [API documentation](https://github.com/elena-kolomeets/Python-REST-APIs/blob/master/Meals%20REST%20API/Meals_API.md) created using Postman and Postdown
+    - check out the [API documentation in README.md](https://github.com/elena-kolomeets/Python-REST-APIs/tree/master/Meals%20REST%20API) created using Postman and Postdown

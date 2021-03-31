@@ -1,5 +1,3 @@
-# Meals API
-
 ## Meals API
 
 This Web API serves data from a restaurant database which contains records about meals and users. 
@@ -222,7 +220,7 @@ Log in with user credentials to get an authorisation token.
   
  
 
-## Meals
+## GET Meals
 
 ```
 GET http://127.0.0.1:5000/meals
@@ -328,7 +326,7 @@ Get all meals records.
   
  
 
-## Meal
+## POST Meal
 
 ```
 POST http://127.0.0.1:5000/meals
@@ -442,7 +440,7 @@ Admin access required.
   
  
 
-## Meal
+## GET Meal
 
 ```
 GET http://127.0.0.1:5000/meals/6063508ba4ea681a192c19e3
@@ -502,7 +500,7 @@ Get a single meal record.
   
  
 
-## Meal
+## PUT Meal
 
 ```
 PUT http://127.0.0.1:5000/meals/6063508ba4ea681a192c19e3
@@ -604,7 +602,7 @@ Admin access required.
   
  
 
-## Meal
+## DELETE Meal
 
 ```
 DELETE http://127.0.0.1:5000/meals/6063508ba4ea681a192c19e3
@@ -646,7 +644,7 @@ Admin access required.
   
  
 
-## Users
+## GET Users
 
 ```
 GET http://127.0.0.1:5000/users
@@ -788,7 +786,7 @@ Admin access required.
   
  
 
-## User
+## POST User
 
 ```
 POST http://127.0.0.1:5000/users
@@ -1054,7 +1052,7 @@ Admin access required.
   
  
 
-## User
+## GET User
 
 ```
 GET http://127.0.0.1:5000/users/60634af83ef5cdcf24a6d96d
@@ -1119,7 +1117,7 @@ Admin access required.
   
  
 
-## User
+## PUT User
 
 ```
 PUT http://127.0.0.1:5000/users/60634af83ef5cdcf24a6d96d
@@ -1293,7 +1291,7 @@ Admin access required.
   
  
 
-## User
+## DELETE User
 
 ```
 DELETE http://127.0.0.1:5000/users/6064853bc838ae729a032832

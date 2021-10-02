@@ -2,8 +2,9 @@ from datetime import datetime
 
 from flask import make_response, abort
 
+
 def get_time_stamp():
-    return datetime.now().strftime(("%Y-%m-%d %H:%M:%S"))
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 # data to serve with the API
@@ -45,7 +46,7 @@ def read_one(lname):
     :return:        person matching last name
     """
     if lname in PEOPLE:
-       return PEOPLE[lname]
+        return PEOPLE[lname]
     else:
         abort(
             404,

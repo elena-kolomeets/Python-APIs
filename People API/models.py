@@ -10,7 +10,7 @@ class Person(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-class PersonSchema(ma.ModelSchema):
+class PersonSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Person
         sqla_session = db.session

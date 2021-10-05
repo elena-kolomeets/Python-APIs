@@ -17,21 +17,27 @@ paths:
       operationId: people.read_all
       tags:
         - People
-      summary: Read the entire list of people
-      description: Read the list of people
+      summary: Read the entire set of people
+      description: Read the set of people
       responses:
         200:
-          description: Successfully read the list of people
+          description: Successfully read the set of people
           schema:
             type: array
             items:
               properties:
+                person_id:
+                  type: integer
+                  description: Id of the person
                 fname:
                   type: string
+                  description: First name of the person
                 lname:
                   type: string
+                  description: Last name of the person
                 timestamp:
                   type: string
+                  description: Creation/Update timestamp of the person's record
 
     post:
       operationId: people.add_one
@@ -53,44 +59,64 @@ paths:
                 type: string
       responses:
         201:
-          description: Successfully add a person to the people list
+          description: Successfully add a person to the people set
+          schema:
+            properties:
+              person_id:
+                type: integer
+                description: Id of the person
+              fname:
+                type: string
+                description: First name of the person
+              lname:
+                type: string
+                description: Last name of the person
+              timestamp:
+                type: string
+                description: Creation/Update timestamp of the person record
 
-  /people/{lname}:
+  /people/{person_id}:
     get:
       operationId: people.read_one
       tags:
         - People
-      summary: Read one person's data from the people list
-      description: Read one person's data from the people list
+      summary: Read one person's data from the people set
+      description: Read one person's data from the people set
       parameters:
-        - name: lname
+        - name: person_id
           in: path
-          description: Last name of the person to look up in the list
-          type: string
+          description: ID of the person to look up in the db
+          type: integer
           required: true
       responses:
         200:
-          description: Successfully read one person's data from the people list
+          description: Successfully read one person's data from the people set
           schema:
             properties:
+              person_id:
+                type: integer
+                description: Id of the person
               fname:
                 type: string
+                description: First name of the person
               lname:
                 type: string
+                description: Last name of the person
               timestamp:
                 type: string
+                description: Creation/Update timestamp of the person record
     
     put:
       operationId: people.update_one
       tags:
         - People
-      summary: Update person's data in the list
-      description: Update person's data in the list
+      summary: Update person's data in the set
+      description: Update person's data in the set
       parameters:
-        - name: lname
+        - name: person_id
           in: path
-          description: Last name of the person whose data is to be updated in the list
-          type: string
+          description: ID of the person whose data is to be updated in the set
+          type: integer
           required: true
         - name: person
           in: body
@@ -99,24 +125,40 @@ paths:
             properties:
               fname:
                 type: string
+                description: First name of the person
               lname:
                 type: string
+                description: Last name of the person
       responses:
         200:
-          description: Successfully updated person's data in the people list
+          description: Successfully updated person's data in the people set
+          schema:
+            properties:
+              person_id:
+                type: string
+                description: Id of the person in the database
+              fname:
+                type: string
+                description: First name of the person
+              lname:
+                type: string
+                description: Last name of the person
+              timestamp:
+                type: string
+                description: Creation/Update timestamp of the person record
     
     delete:
       operationId: people.delete_one
       tags:
         - People
-      summary: Delete person's data from the people list
-      description: Delete person's data from the people list
+      summary: Delete person's data from the people set
+      description: Delete person's data from the people set
       parameters:
-        - name: lname
+        - name: person_id
           in: path
-          description: Last name of the person whose data to be deleted in the list
-          type: string
+          description: ID of the person whose data to be deleted in the set
+          type: integer
           required: true
       responses:
         200:
-          description: Successfully deleted person's info from the people list
+          description: Successfully deleted person's info from the people set

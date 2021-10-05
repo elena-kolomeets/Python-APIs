@@ -1,30 +1,6 @@
-from datetime import datetime
-
 from flask import make_response, abort
-
-
-def get_time_stamp():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-# data to serve with the API
-PEOPLE = {
-    "Farrell": {
-        "fname": "Doug",
-        "lname": "Farrell",
-        "timestamp": get_time_stamp()
-    },
-    "Brockman": {
-        "fname": "Kent",
-        "lname": "Brockman",
-        "timestamp": get_time_stamp()
-    },
-    "Easter": {
-        "fname": "Bunny",
-        "lname": "Easter",
-        "timestamp": get_time_stamp()
-    }
-}
+from config import db
+from models import Person, PersonSchema
 
 
 def read_all(): 
@@ -34,23 +10,31 @@ def read_all():
     
     :return:        json string of list of people
     """
-    return [PEOPLE[key] for key in sorted(PEOPLE.keys())]
+    # get the list of people
+    people = Person.query.order_by(Person.lname).all()
+    # serialize data for json response(incl. converting timestamp to string)
+    person_schema = PersonSchema(many=True)
+    return person_schema.dump(people).data
 
 
-def read_one(lname):
+def read_one(person_id):
     """
-    This function responds to a request for /api/people/{lname}
+    This function responds to a request for /api/people/{person_id}
     with one matching person from people
 
-    :param lname:   last name of person to find
-    :return:        person matching last name
+    :param person_id: ID of person to find
+    :return:          person matching ID
     """
-    if lname in PEOPLE:
-        return PEOPLE[lname]
+    # search for person in the db
+    person = Person.query.filter(Person.person_id == person_id).one_or_none()
+    if person is not None:
+        # serialize person's data
+        person_schema = PersonSchema()
+        return person_schema.dump(person).data
     else:
         abort(
             404,
-            f"Person with last name {lname} is not in the list."
+            f"Person with ID {person_id} is not in the database."
         )
 
 
@@ -60,63 +44,82 @@ def add_one(person):
     based on the passed in person data
 
     :param person:  person to create in people structure
-    :return:        201 on success, 406 on person exists
+    :return:        201 on success, 409 on person exists
     """
     lname = person.get("lname", None)
     fname = person.get("fname", None)
-    if lname not in PEOPLE and lname is not None:
-        PEOPLE[lname] = {
-            "fname": fname, 
-            "lname": fname,
-            "timestamp": get_time_stamp()
-        }
-        return make_response(
-            f"{lname} successfully added to the list.", 
-            201
-        )
+    # check if the person already exists in db
+    person = Person.query.filter(Person.lname == lname).filter(Person.fname == fname).one_or_none()
+    if person is not None:
+        # deserialize json data into db object
+        person_schema = PersonSchema()
+        new_person = person_schema.load(person, session=db.session)
+        db.session.add(new_person)  # add new person to session
+        db.session.commit()  # commit session changes to db
+        # serialize and return the new person
+        return person_schema.dump(new_person).data, 201
     else:
-        # person's data is already in the list, so abort operation
         abort(
-            406,
-            f"Person with the last name {lname} is already in the list."
+            409,
+            f"Person with the name {lname} {fname} already exists in the db."
         )
 
 
-def update_one(lname, person):
+def update_one(person_id, person):
     """
     This function updates an existing person in the people structure
-    :param lname:   last name of person to update in the people structure
+    :param person_id:   ID of person to update in the people structure
     :param person:  person to update
     :return:        updated person structure
     """
-    if lname in PEOPLE:
-        PEOPLE[lname]["fname"] = person["fname"]
-        PEOPLE[lname]["timestamp"] = get_time_stamp
-        return make_response(
-            f"Successfully updated {lname}'s data in the people list",
-            200
-        )
-    else:
+    lname = person.get("lname", None)
+    fname = person.get("fname", None)
+    # search person with person_id in db
+    person = Person.query.filter(Person.person_id == person_id).one_or_none()
+    if person is None:
         abort(
             404,
-            f"Person with the last name {lname} is not in the list."
+            f"Person with the ID {person_id} is not in the db."
         )
+    else:
+        # check if person with new name already exists in db
+        update_person = Person.query.filter(Person.lname == lname).filter(Person.fname == fname).one_or_none()
+        if update_person is not None and update_person.person_id != person_id:
+            abort(
+                404,
+                f"Person with the name {lname} {fname} already exists in the db."
+            )
+        else:  # person's record can be updated
+            # deserialize data from the request into db object
+            person_schema = PersonSchema()
+            # create a new person record
+            new_person = person_schema.load(person, session=db.session).data
+            # set ID of the new record
+            new_person.person_id = person_id
+            # to update a person, run merge: it will merge the state of
+            # new (new_person) and old (person) objects with same ID
+            db.session.merge(new_person)
+            db.session.commit()
+            # return the updated person's record
+            return person_schema.dump(new_person).data, 200
 
 
-def delete_one(lname):
+def delete_one(person_id):
     """
     This function deletes a person from the people structure
-    :param lname:   last name of person to delete
+    :param person_id:   ID of person to delete
     :return:        200 on successful delete, 404 if not found
     """
-    if lname in PEOPLE:
-        del PEOPLE[lname]
+    # search for the requested person
+    person = Person.query.filter(Person.person_id == person_id).one_or_none()
+    if person is not None:
+        db.session.delete(person)
+        db.session.commit()
         return make_response(
-            f"Successfully deleted {lname}'s data in the people list",
-            200
+            f"Person {person_id} deleted", 200
         )
     else:
         abort(
             404,
-            f"Person with the last name {lname} is not in the list."
+            f"Person with the ID {person_id} is not in the db."
         )

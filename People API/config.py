@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 
 
-# get the dir wher the app runs
+# get the dir where the app runs
 basedir = os.path.abspath(os.path.dirname(__file__))
 # create flask connexion app
 connex_app = connexion.App(__name__, specification_dir=basedir)

@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import make_response, abort
 from config import db
 from models import Person, PersonSchema
@@ -14,7 +15,7 @@ def read_all():
     people = Person.query.order_by(Person.lname).all()
     # serialize data for json response(incl. converting timestamp to string)
     person_schema = PersonSchema(many=True)
-    return person_schema.dump(people).data
+    return person_schema.dump(people)
 
 
 def read_one(person_id):
@@ -26,11 +27,11 @@ def read_one(person_id):
     :return:          person matching ID
     """
     # search for person in the db
-    person = Person.query.filter(Person.person_id == person_id).one_or_none()
-    if person is not None:
+    person_query = Person.query.filter(Person.person_id == person_id).one_or_none()
+    if person_query is not None:
         # serialize person's data
         person_schema = PersonSchema()
-        return person_schema.dump(person).data
+        return person_schema.dump(person_query)
     else:
         abort(
             404,
@@ -49,15 +50,15 @@ def add_one(person):
     lname = person.get("lname", None)
     fname = person.get("fname", None)
     # check if the person already exists in db
-    person = Person.query.filter(Person.lname == lname).filter(Person.fname == fname).one_or_none()
-    if person is not None:
+    person_query = Person.query.filter(Person.lname == lname).filter(Person.fname == fname).one_or_none()
+    if person_query is None:
         # deserialize json data into db object
         person_schema = PersonSchema()
         new_person = person_schema.load(person, session=db.session)
         db.session.add(new_person)  # add new person to session
         db.session.commit()  # commit session changes to db
         # serialize and return the new person
-        return person_schema.dump(new_person).data, 201
+        return person_schema.dump(new_person), 201
     else:
         abort(
             409,
@@ -75,14 +76,14 @@ def update_one(person_id, person):
     lname = person.get("lname", None)
     fname = person.get("fname", None)
     # search person with person_id in db
-    person = Person.query.filter(Person.person_id == person_id).one_or_none()
-    if person is None:
+    person_query = Person.query.filter(Person.person_id == person_id).one_or_none()
+    if person_query is None:
         abort(
             404,
             f"Person with the ID {person_id} is not in the db."
         )
     else:
-        # check if person with new name already exists in db
+        # check if another person with new name already exists in db
         update_person = Person.query.filter(Person.lname == lname).filter(Person.fname == fname).one_or_none()
         if update_person is not None and update_person.person_id != person_id:
             abort(
@@ -93,15 +94,16 @@ def update_one(person_id, person):
             # deserialize data from the request into db object
             person_schema = PersonSchema()
             # create a new person record
-            new_person = person_schema.load(person, session=db.session).data
+            new_person = person_schema.load(person, session=db.session)
             # set ID of the new record
             new_person.person_id = person_id
+            new_person.timestamp = datetime.utcnow()
             # to update a person, run merge: it will merge the state of
             # new (new_person) and old (person) objects with same ID
             db.session.merge(new_person)
             db.session.commit()
             # return the updated person's record
-            return person_schema.dump(new_person).data, 200
+            return person_schema.dump(new_person), 200
 
 
 def delete_one(person_id):
@@ -111,9 +113,9 @@ def delete_one(person_id):
     :return:        200 on successful delete, 404 if not found
     """
     # search for the requested person
-    person = Person.query.filter(Person.person_id == person_id).one_or_none()
-    if person is not None:
-        db.session.delete(person)
+    person_query = Person.query.filter(Person.person_id == person_id).one_or_none()
+    if person_query is not None:
+        db.session.delete(person_query)
         db.session.commit()
         return make_response(
             f"Person {person_id} deleted", 200

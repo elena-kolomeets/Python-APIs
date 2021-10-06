@@ -1,20 +1,23 @@
 """
-This API was built using the Real Python tutorial: 
+opens Swagger UI (API interface) on homepage
+
+This API was built with the help of the Real Python tutorial:
 https://realpython.com/flask-connexion-rest-api/
 """
-import connexion
-from flask import render_template
+from flask import redirect
+from config import connex_app
 
-# create an app instance (based on Flask)
-app = connexion.App(__name__, specification_dir='./')
-# configure API endpoints
+# get the app instance created in config.py
+app = connex_app
+# configure API endpoints from yml file
 app.add_api('swagger.yml')
+
 
 @app.route('/')
 def home():
-    """Opens home.html on localhost:5000/"""
-    return render_template('home.html')
+    """Opens Swagger UI"""
+    return redirect("/api/ui/#/People")
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
